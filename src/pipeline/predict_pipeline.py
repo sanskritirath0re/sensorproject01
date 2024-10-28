@@ -9,7 +9,6 @@ from flask import request
 from src.constant import *
 from src.utils.main_utils import MainUtils
 from dataclasses import dataclass
-# from typing import Any 
 
 @dataclass
 class PredictionPipelineConfig:
@@ -21,7 +20,7 @@ class PredictionPipelineConfig:
 
 
 class PredictionPipeline:
-    def __init__(self,request:request):
+    def __init__(self,request: request):
 
         self.request = request
         self.utils = MainUtils()
