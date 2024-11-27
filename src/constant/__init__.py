@@ -1,6 +1,6 @@
 import os
 
-AWS_S3_BUCKET_NAME = "wafer-fault"
+AWS_S3_BUCKET_NAME = "faultinwafer"
 MONGO_DATABASE_NAME = "sans"
 MONGO_COLLECTION_NAME = "waferfault"
 
