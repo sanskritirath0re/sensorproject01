@@ -33,6 +33,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
+      - name: Install Utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -54,3 +58,39 @@ jobs:
           # be deployed to ECS.
           docker build -t ${{ secrets.AWS_ECR_REPO_URI }}:$IMAGE_TAG .
           docker push ${{ secrets.AWS_ECR_REPO_URI }}:$IMAGE_TAG
+          
+          
+  Continuous-Deployment:
+    needs: build-and-push-ecr-image
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      
+      
+      - name: Pull latest images
+        run: |
+         docker pull ${{ secrets.AWS_ECR_REPO_URI }}:latest
+         
+                
+      # - name: Stop and remove visibility container if running
+      #   run: |
+      #    docker ps -q --filter "name=visibility" | grep -q . && docker stop visibility && docker rm -fv visibility
+      - name: Run Docker Image to serve users
+        run: |
+         docker run -d -p 8080:8080 --name=sensor -e 'MONGO_DB_URL=${{ secrets.MONGO_DB_URL }}' -e 'AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}' -e 'AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}' -e 'AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}' ${{ secrets.AWS_ECR_REPO_URI }}:latest
+
+      - name: Clean previous images and containers
+        run: |
+         docker system prune -f
